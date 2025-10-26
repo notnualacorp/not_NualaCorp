@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NualaCorp Terminal</title>
+<style>
+body { background: #000; color: #00ff99; font-family: monospace; font-size: 16px; margin: 0; padding: 20px; }
+#terminal { max-width: 800px; margin: 0 auto; line-height: 1.5; white-space: pre-wrap; }
+.input-line { display: flex; align-items: center; margin-top: 10px; }
+.prompt { color: #00ffaa; margin-right: 8px; }
+input { flex: 1; background: none; border: none; color: #00ff99; font-family: inherit; font-size: inherit; outline: none; }
+.response { margin-left: 1em; color: #66ffcc; }
+</style>
+</head>
+<body>
+<div id="terminal">
+NUALACORP SYSTEM v1.7 — Classified Access<br>
+Unauthorized personnel will be monitored.<br><br>
+Type anything to begin.<br><br>
+</div>
+
+<div class="input-line">
+  <span class="prompt">&gt;</span>
+  <input type="text" id="commandInput" autocomplete="off" autofocus>
+</div>
+
+<script>
+const terminal = document.getElementById("terminal");
+const input = document.getElementById("commandInput");
+
+const riddles = [
+  { question: "A farmer's key to success, what am I?", answer: "xiv felines" },
+  { question: "The peaks of the heavens, the abyss of the alphabet. Order prevails, no chaos remains.", answer: "zenith" },
+  { question: "A textureless badge of honor select hamsters proudly wear.", answer: "..." }
+];
+
+let currentRiddle = 0;
+let riddleShown = false;
+let overridePrompt = false;
+
+// Add a line to terminal
+function addLine(text){
+  terminal.innerHTML += text + "<br>";
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+// Show next riddle or override prompt
+function showNextRiddle(){
+  if(currentRiddle < riddles.length){
+    addLine("<span class='response'>" + riddles[currentRiddle].question + "</span>");
+    riddleShown = true;
+  } else {
+    addLine("<br>All prompts answered.<br>Enter Terminal Override Code to override Terminal:<br>");
+    overridePrompt = true;
+  }
+}
+
+// Redeem token by calling Google Apps Script
+async function redeemToken(token, playerID){
+  const url = "https://script.google.com/macros/s/AKfycbxccYp0HenTXn43NB4j1y7oQfPy3cpqhJg289b78av_bIc4AjiTD4cJnu4UlEtNq1s_/exec"
+            + "?token=" + encodeURIComponent(token)
+            + "&playerID=" + encodeURIComponent(playerID)
+            + "&redeem=true";
+
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    let data;
+try { 
+  data = JSON.parse(text); 
+} catch(err) { 
+  console.error("Invalid JSON from server:", text); 
+  data = { success: false, error: "Invalid JSON response" }; 
+}
+
+
+
+    if(data.success){
+      addLine("<span class='response' style='color:#ffdd00'>✅ Terminal overridden.</span>");
+    } else {
+      addLine("<span class='response' style='color:#ff4444'>❌ Terminal override error. Maybe try again later...? This isn't part of the puzzle it just isn't working for you right now..</span>");
+    }
+  } catch(err){
+    // Google sometimes blocks CORS; assume token worked if sheet updated
+    addLine("<span class='response' style='color:#ffdd00'>✅ Terminal overridden.</span>");
+  }
+}
+
+// Handle Enter key
+input.addEventListener("keydown", function(e){
+  if(e.key === "Enter"){
+    const cmd = input.value.trim();
+    input.value = "";
+    addLine("> " + cmd);
+
+    if(!overridePrompt){
+      if(!riddleShown){
+        showNextRiddle();
+        return;
+      }
+
+      if(cmd.toLowerCase() === riddles[currentRiddle].answer.toLowerCase()){
+        riddleShown = false;
+        currentRiddle++;
+        showNextRiddle();
+      } else {
+        addLine("<span class='response'>Incorrect. Try again.</span>");
+      }
+      return;
+    }
+
+    if(overridePrompt){
+      const token = cmd;
+      const playerID = prompt("Please enter user identification number.");
+      if(playerID){
+        redeemToken(token, playerID);
+      } else {
+        addLine("<span class='response'>You must enter your UserID.</span>");
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
