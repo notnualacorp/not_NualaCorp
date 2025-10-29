@@ -57,34 +57,31 @@ function showNextRiddle(){
 
 // Redeem token by calling Google Apps Script
 async function redeemToken(token, playerID){
-  const url = "https://script.google.com/macros/s/AKfycbxccYp0HenTXn43NB4j1y7oQfPy3cpqhJg289b78av_bIc4AjiTD4cJnu4UlEtNq1s_/exec"
+  const url = "https://script.google.com/macros/s/AKfycbzxmEbNkK1IAnSn_vjYOA0JM-HozTkzzdGAE_aLveJ4_-XtwLDAhShgYdGE2SVXbO9b/exec"
             + "?token=" + encodeURIComponent(token)
             + "&playerID=" + encodeURIComponent(playerID)
             + "&redeem=true";
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { mode: "cors" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
     const text = await res.text();
-    let data;
-try { 
-  data = JSON.parse(text); 
-} catch(err) { 
-  console.error("Invalid JSON from server:", text); 
-  data = { success: false, error: "Invalid JSON response" }; 
-}
+    let data = JSON.parse(text);
 
-
-
-    if(data.success){
-      addLine("<span class='response' style='color:#ffdd00'>✅ Terminal overridden.</span>");
+    if (data.success) {
+      addLine("<span class='response' style='color:#ffdd00'>Terminal override attempted.</span>");
     } else {
-      addLine("<span class='response' style='color:#ff4444'>❌ Terminal override error. Maybe try again later...? This isn't part of the puzzle it just isn't working for you right now..</span>");
+      addLine("<span class='response' style='color:#ff4444'>❌ Override failed: " + (data.error || "invalid token") + ".</span>");
     }
-  } catch(err){
-    // Google sometimes blocks CORS; assume token worked if sheet updated
-    addLine("<span class='response' style='color:#ffdd00'>✅ Terminal overridden.</span>");
+  } catch (err) {
+    console.warn("Redeem error:", err);
+    addLine("<span class='response' style='color:#ff4444'>❌ Connection failed or blocked by CORS. Token not verified.</span>");
   }
 }
+
+
+
+
 
 // Handle Enter key
 input.addEventListener("keydown", function(e){
